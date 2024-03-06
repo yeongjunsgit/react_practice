@@ -427,4 +427,349 @@ npm run build
 - 둘의 차이점은 무엇일까?
   - prop은 컴포넌트를 사용하는 외부자를 위한 데이터
   - state는 컴포넌트를 만드는 내부자를 위한 데이터
-- 
+
+### state 사용
+
+- 특정 버튼을 눌렀을 때, 변수의 내용이 바뀌면서 변수의 내용에 따라 if 문을 통해 출력하는 컨텐츠를 바꾼다고 한다면?
+
+  ```react
+  function App() {
+    const mode = mode[0];
+    const topics = [
+      { id: 1, title: "html", body: "html is ..." },
+      { id: 2, title: "css", body: "css is ..." },
+      { id: 3, title: "javascript", body: "JS is ..." },
+    ];
+    let content = null;
+    // 현재 모드의 값에 따라서 출력되는 콘텐츠가 달라짐
+    if (mode === "WELCOME") {
+      content = <Article title="Welcome" body="Hello, WEB"></Article>;
+    } else if (mode === "READ") {
+      content = <Article title="READ" body="Hello, Read"></Article>;
+    }
+    return (
+      <div>
+        <Header
+          title="REACT"
+          onChangeMode={() => {
+            // 버튼을 누르면 WELCOME 으로 모드가 바뀜
+            mode = 'WELCOME';
+          }}
+        ></Header>
+        <Nav
+          topics={topics}
+          onChangeMode={(id) => {
+            // 버튼을 누르면 READ로 모드가 바뀜
+            mode = 'READ';
+          }}
+        ></Nav>
+        {content}
+        {/* <Article title="Welcome" body="Hello, WEB"></Article> */}
+      </div>
+    );
+  }
+  ```
+
+  - 위와 같은 코드를 이용하면 버튼을 눌렀을 때, 모드값이 바뀌면서 내용이 바뀌겠지???
+  - 정답은 아니다.
+  - 왜???
+    - 버튼을 눌렀을 때 App 이 다시 실행 되는게 아니라서 모드의 값이 바뀌어도 출력되는 내용은 바뀌지 않는것
+    - 그럼 어떻게 해야 바꿀 수 있을까?
+  - 이럴 때 바로 state를 이용해야 한다.
+
+### state 사용법
+
+- 우선 state를 사용하기 위해서는 import를 할 필요가 있다.
+
+  ```react
+  import { useState } from "react";
+  ```
+
+  - 최상단에 다음과 같이 입력하면 useState 함수를 통해 state 기능을 사용할 수 있다.
+  -  현재 mode의 값에 따라서 출력되는 내용이 바뀌어야하는데, mode는 그저 평범한 지역변수이다. 이를 상태(state)로 업그레이드 시켜야한다.
+
+  ```react
+  function App() {
+    // _mode가 상태값으로 선언
+    const _mode = useState("WELCOME");
+    // _mode 출력해보기
+    // ['WELCOME', F(함수)] 가 들어 있다.
+    console.log(_mode);
+    // 위의 출력 결과를 2개로 나눈다. 
+    const mode = mode[0];
+    const setMode = mode[1];
+    const topics = [
+      { id: 1, title: "html", body: "html is ..." },
+      { id: 2, title: "css", body: "css is ..." },
+      { id: 3, title: "javascript", body: "JS is ..." },
+    ];
+  ...
+  ```
+
+  - 위의 mode 관련 변수들은 너무 복잡하게 선언되고 있다.
+
+    다른 방식으로 변수들을 선언해보자.
+
+  ```react
+  function App() {
+    // 위의 코드가 1줄로 정리
+    const [mode, setMode] = useState("WELCOME");
+    const topics = [
+      { id: 1, title: "html", body: "html is ..." },
+      { id: 2, title: "css", body: "css is ..." },
+      { id: 3, title: "javascript", body: "JS is ..." },
+    ];
+    let content = null;
+    if (mode === "WELCOME") {
+      content = <Article title="Welcome" body="Hello, WEB"></Article>;
+    } else if (mode === "READ") {
+      content = <Article title="READ" body="Hello, Read"></Article>;
+    }
+    return (
+      <div>
+        <Header
+          title="REACT"
+          onChangeMode={() => {
+            setMode("WELCOME");
+          }}
+        ></Header>
+        <Nav
+          topics={topics}
+          onChangeMode={(id) => {
+            // useState를 이용해서 얻은 함수를 사용하여 상태를 변경
+            setMode("READ");
+          }}
+        ></Nav>
+        {content}
+        {/* <Article title="Welcome" body="Hello, WEB"></Article> */}
+      </div>
+    );
+  }
+  ```
+
+  - 현재 위의 코드는 title 값만 바뀌고 Read로 바꾸기 위해 어떤 글을 눌렀는지 까지는 아직 알 수 없다. 그럼 id 값을 상태로 바꾸어 관리하면 출력하기가 용이할 것이다.
+
+  ```react
+  function App() {
+    const [mode, setMode] = useState("WELCOME");
+    const [id, setId] = useState(null);
+    const topics = [
+      { id: 1, title: "html", body: "html is ..." },
+      { id: 2, title: "css", body: "css is ..." },
+      { id: 3, title: "javascript", body: "JS is ..." },
+    ];
+    let content = null;
+    if (mode === "WELCOME") {
+      content = <Article title="Welcome" body="Hello, WEB"></Article>;
+    } else if (mode === "READ") {
+      // mode의 상태가 "READ"일때, 출력되는 값들을 바꾸기위해 우선 title과 body의 값을 초기화
+      let title,
+        body = null;
+      // 가지고 있는 topics를 순회하면서 setId 를 통해 얻은 id 값과 일치하는 topics의 값을 찾아 해당 내용을 title과 body에 할당
+      for (let i = 0; i < topics.length; i++) {
+        console.log(topics[i].id, id);
+        if (topics[i].id === id) {
+          title = topics[i].title;
+          body = topics[i].body;
+        }
+      }
+      content = <Article title="READ" body="Hello, Read"></Article>;
+    }
+    return (
+      <div>
+        <Header
+          title="REACT"
+          onChangeMode={() => {
+            setMode("WELCOME");
+          }}
+        ></Header>
+        <Nav
+          topics={topics}
+          onChangeMode={(_id) => {
+            setMode("READ");
+            // 함수내에 인자로 들어가는 _id를 인자로하여 setId 호출
+            setId(_id);
+          }}
+        ></Nav>
+        {content}
+        {/* <Article title="Welcome" body="Hello, WEB"></Article> */}
+      </div>
+    );
+  }
+  
+  export default App;
+  ```
+
+  - 위코드의 주석을 확인하였을때 정상적으로 출력이 될줄 알았으나 버튼을 눌러도 안의 내용이 바뀌지 않았다
+
+  - 왜 일까?
+
+    - for 문안에서
+
+      ```react
+      console.log(topics[i].id, id);
+      ```
+
+      를 통해 무엇이 문제인지 확인해보자.
+
+      ```react
+      1 '2'
+      ```
+
+      음...? 보니까 토픽의 id 값은 숫자형인데 setId에서 가져온 id는 문자열이다.
+
+  - 근본적으로 부터 돌아가보자.
+
+    ```react
+    function Nav(props) {
+      const lis = [];
+      for (let i = 0; i < props.topics.length; i++) {
+        let t = props.topics[i];
+        lis.push(
+          <li key={t.id}>
+            <a
+              id={t.id}
+              href={"/read/" + t.id}
+              onClick={(event) => {
+                event.preventDefault();
+                // 이 부분!
+                props.onChangeMode(event.target.id);
+                // 이 부분!
+              }}
+            >
+              {t.title}
+            </a>
+          </li>
+        );
+      }
+      return (
+        <nav>
+          <ol>{lis}</ol>
+        </nav>
+      );
+    }
+    ```
+
+    - 위의 주석으로 표시한 부분을 보면 onChangeMode 함수에 인자로 event.target.id를 주고있다. 
+
+      target의 id는 "id = {t.id}"로 값을 할당하였다.
+
+      이때, t.id는 숫자가 맞지만, 태그의 속성으로 넘기면 문자열로 바뀐다. 즉, event.target.id = 문자열이었고, 이것 때문에 위에서 출력했을 때, setId를 통해 출력한 Id 값이 문자열이 됬던 것이다.
+
+      따라서, onChangeMode에 인자로 넣을떄 숫자형으로 바꿔서 넣어주면 될 것이다!
+
+    ```react
+    function Nav(props) {
+      const lis = [];
+      for (let i = 0; i < props.topics.length; i++) {
+        let t = props.topics[i];
+        lis.push(
+          <li key={t.id}>
+            <a
+              id={t.id}
+              href={"/read/" + t.id}
+              onClick={(event) => {
+                event.preventDefault();
+                // 이 부분에서 인자를 받을때 숫자형으로 변환해서 넣어줌
+                props.onChangeMode(Number(event.target.id));
+              }}
+            >
+              {t.title}
+            </a>
+          </li>
+        );
+      }
+      return (
+        <nav>
+          <ol>{lis}</ol>
+        </nav>
+      );
+    }
+    ```
+
+    - 위와 같이 바꾸면 버튼을 클릭할때 해당 READ의 값으로 내용이 잘 바뀐다.
+
+
+
+## 8. CRUD - 1 . CREATE
+
+- CRUD의 CREATE를 만들고자 한다.
+
+- 먼저 CREATE 페이지를 만들어야 한다.
+
+  - 현재까지 react에선 따로 페이지를 만드는 것이 아닌, 현재 mode의 값에 따라 현재 페이지에서 출력되는 것이 다르게 하였고, create 페이지도 이와 같이 진행할 것이다.
+
+  ```react  
+  function App() {
+      ...
+        <a href="/create" onClick={event =>{
+          event.preventDefault();
+          setMode("CREATE");
+          }
+        }>Create</a>
+      ...
+  }
+  ```
+
+  - 위와 같이 App 최하단에 create 페이지를 호출할 a태그를 생성한다. mode 값을 통해 페이지에 출력되는 값을 바꿀 것이므로 이미 사용하던 setMode를 이용해 mode의 값을 CREATE로 바꾼다.
+
+  ```react
+  if (mode === "WELCOME") {
+      content = <Article title="Welcome" body="Hello, WEB"></Article>;
+    } else if (mode === "READ") {
+      let title,
+        body = null;
+      for (let i = 0; i < topics.length; i++) {
+        console.log(topics[i].id, id);
+        if (topics[i].id === id) {
+          title = topics[i].title;
+          body = topics[i].body;
+        }
+      }
+      content = <Article title={title} body={body}></Article>;
+    } else if (mode === "CREATE") {
+      content = <Create></Create>
+    }
+  ```
+
+  - mode를 통해 출력하는 내용을 바꾸는 조건문에서 CREATE 일때의 경우를 추가한다.
+
+    이 때, Create 컴포넌트를 만들어서 해당 컴포넌트를 출력하기로 한다.
+
+  ```react
+  function Create(props) {
+    return (
+      <article>
+        <h2>Create</h2>
+        {/* form에서submit 이벤트가 발생하면 페이지를 새로고침 해버리기 때문에event.preventDefault를 사용해야한다. */}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            // event.target.title은 그냥 태그고 해당 태그의 value에 접근해야 그 값을 받을 수 있다.
+            const title = event.target.title.value;
+            const body = event.target.body.value;
+            // App에서 Create 컴포넌트에 props로 보내준 onCreate 함수를 호출하여 위에서 저장한 제목과 내용을 인자로 보내준다.
+            props.onCreate(title, body);
+          }}
+        >
+          <p>
+            <input type="text" name="title" placeholder="title"></input>
+          </p>
+          <p>
+            <textarea body="content" placeholder="body"></textarea>
+          </p>
+          <p>
+            <input type="submit" value="Create"></input>
+          </p>
+        </form>
+      </article>
+    );
+  }
+  ```
+
+  - 위 주석의 내용을 기반으로 Create 컴포넌트를 작성한다.
+
+  ```react
+  ```
+
+  - 음.. 컴포넌트까지 연결했으니 이제 App에서 부터 적으면 될듯!
