@@ -768,8 +768,350 @@ npm run build
   ```
 
   - 위 주석의 내용을 기반으로 Create 컴포넌트를 작성한다.
+  - Create 컴포넌트가 작성되었다면, 해당 컴포넌트를 이용하는 조건문으로 가서 onCreate에 인자로 준 값을 이용해 topics를 갱신해주면된다.
 
   ```react
+    } else if (mode === "CREATE") {
+      content = (
+        <Create
+          onCreate={(_title, _body) => {
+            const newTopic = {
+              title: _title,
+              body: _body,
+            };
+            setTopics(newTopic);
+          }}
+        ></Create>
+      );
+    }
   ```
 
-  - 음.. 컴포넌트까지 연결했으니 이제 App에서 부터 적으면 될듯!
+  - 음... 그런데 위와 같이 적어도 topics의 값이 바뀌지않는다 엥...? 왜 일까?
+
+  ### 데이터 타입 별 상태 변경 방법
+
+  - 상태를 만들 때, 상태의 데이터는 원시 데이터 타입이라면 기존의 방식대로 상태를 만들면 된다.
+
+    > 원시데이터 타입
+    >
+    > 1. String
+    > 2. number
+    > 3. boolean
+    > 4. null
+    > 5. undefined
+    > 6. bigint
+    > 7. symbol
+
+  - 하지만 상태를 만들 때 들어가는 데이터 타입이 범 객체라면?
+
+    > 범 객체 타입
+    >
+    > 1. object
+    > 2. array
+
+    - 상태로 만들 때 다른 방식으로 접근해야한다.
+
+      ```react
+      // 1. 기존 value를 복제
+      newValue = {...value}
+      // 기존의 변수를 만들지 말고 복제해서 변경한 다음 setValue 해야한다.
+      // 2. 복제한 value에 변경된 value를 할당
+      newValue = changeValue
+      // 3. 변경된 value로 상태변경
+      setValue(newValue)
+      ```
+
+      - 각각의 범객체를 복제 할때는
+
+        ```react
+        // 객체를 복제 할때는
+        = {...value}
+        // 배열을 복제 할때는
+        = [...value]
+        ```
+
+  - 그렇다면 왜 갱신되지 않았던 걸까?
+
+    - setValue()는 value값이 변경이 됬는지 확인을 하여 확인이 되야 화면을 변경하지 원래 value와 바뀌지않았으면 굳이 화면을 변경하지 않는다고 한다.
+
+      
+
+- 그렇다면 위의 내용을 코드에 적용해보자
+
+  ```react
+    } else if (mode === "CREATE") {
+      content = (
+        <Create
+          onCreate={(_title, _body) => {
+            // onCreate로 받은 데이터를 객체로 만듬
+            const newTopic = {
+              id: nextId,
+              title: _title,
+              body: _body,
+            };
+            // 기존 배열를 newTopics에 복제
+            const newTopics = [...topics];
+            // 복제한 배열 newTopics에 onCreate의 데이터를 넣음
+            newTopics.push(newTopic);
+            // 새롭게 만들어진 배열로 상태 설정
+            setTopics(newTopics);
+          }}
+        ></Create>
+      );
+    }
+  ```
+
+  - 주석에 내용에 맞추어 작성하면 create가 잘 생성된다.
+  - 그 다음, create 기믹을 더 정교하게 만들자
+    1. 글 작성시 해당 글 상세페이지로 가자.
+    2. 다음 글 작성을 위해 id 값 갱신
+
+  ```react
+    } else if (mode === "CREATE") {
+      content = (
+        <Create
+          onCreate={(_title, _body) => {
+            // onCreate로 받은 데이터를 객체로 만듬
+            const newTopic = {
+              id: nextId,
+              title: _title,
+              body: _body,
+            };
+            // 기존 배열를 newTopics에 복제
+            const newTopics = [...topics];
+            // 복제한 배열 newTopics에 onCreate의 데이터를 넣음
+            newTopics.push(newTopic);
+            // 새롭게 만들어진 배열로 상태 설정
+            setTopics(newTopics);
+            // 글 생성 시 상세페이지로 넘어가게 한다.
+            setMode("READ");
+            // 현재 아이디를 방금 생성한 아이디로 변경한다.
+            setId(nextId);
+            // 다음 아이디 생성 때, 아이디 값이 겹치지 않게 하기 위해 상태 변경
+            setNextId(nextId + 1);
+          }}
+        ></Create>
+      );
+    }
+  ```
+
+
+
+## 9. CRUD_2. UPDATE
+
+- 먼저 update로 가는 링크를 추가하자
+
+  ```react
+    return (
+      <div>
+        <Header
+          title="REACT"
+          onChangeMode={() => {
+            setMode("WELCOME");
+          }}
+        ></Header>
+        <Nav
+          topics={topics}
+          onChangeMode={(_id) => {
+            setMode("READ");
+            setId(_id);
+          }}
+        ></Nav>
+        {content}
+        {/* <Article title="Welcome" body="Hello, WEB"></Article> */}
+        <ul>
+          <li>
+            <a
+              href="/create"
+              onClick={(event) => {
+                event.preventDefault();
+                setMode("CREATE");
+              }}
+            >
+              Create
+            </a>
+          </li>
+          <li><a href="/update">Update</a></li>
+        </ul>
+      </div>
+    );
+  }
+  
+  export default App;
+  ```
+
+  - App의 최하단에 Update 버튼을 추가했다! 그런데... update는 수정 버튼인데 메인페이지, 생성페이지에도 다 노출이 된다. 별로 보기가 안좋다. 수정하도록 하자
+
+  ```react
+  // App 변수 선언부분
+    // update 가 상세페이지에서만 나올 수 있게 하기 위한 변수
+    let contextControl = null;
+  
+  // App 조건문에서 mode 값이 READ 일때 부분
+  	...
+      contextControl = (
+        <li>
+          <a href="/update">Update</a>
+        </li>
+      );
+  
+  // App 최하단 부분
+        <ul>
+          <li>
+            <a
+              href="/create"
+              onClick={(event) => {
+                event.preventDefault();
+                setMode("CREATE");
+              }}
+            >
+              Create
+            </a>
+          </li>
+          {contextControl}
+        </ul>
+  ```
+
+  - 위와 같이 코드를 바꾸면, 평소에는 contextControl이 null 값이라 아무것도 출력되지 않지만, mode 값이 READ 일때 contextControl 안에 HTML 코드가 추가되어 화면에 출력된다.
+
+- 그 다음 update 링크를 눌렀을 때, 올바른 주소로 이동하고, mode 값을 바꾸기 위해 contextControl의 코드를 수정한다.
+
+  ```react
+  // mode === 'READ'의 최하단 부분
+  contextControl = (
+        <li>
+          <a href={"/update/" + id} 
+          onClick={event => {
+            event.preventDefault();
+            setMode("UPDATE");
+          }}>
+            Update</a>
+        </li>
+      );
+  ```
+
+- 그런 다음 update 컴포넌트를 만들자
+
+  ```react
+  function Update(props) {
+    const [title, setTitle] = useState(props.title);
+    const [body, setBody] = useState(props.body);
+    return (
+      <article>
+        <h2>Update</h2>
+        {/* form에서submit 이벤트가 발생하면 페이지를 새로고침 해버리기 때문에event.preventDefault를 사용해야한다. */}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            // event.target.title은 그냥 태그고 해당 태그의 value에 접근해야 그 값을 받을 수 있다.
+            const title = event.target.title.value;
+            const body = event.target.body.value;
+            props.onUpdate(title, body);
+          }}
+        >
+          <p>
+            {/* props로 받은 데이터를 그대로 넣으면 input값을 바꿀수가 없다.
+            props로 내려준 값은 꼭 지켜져야하는 규칙이기 때문 - 부모가 내려준 값은 변경 불가 */}
+            <input
+              type="text"
+              name="title"
+              placeholder="title"
+              // 기존 props.title을 value로 쓰던것을 위에서 상태로 선언한 title로 교체
+              value={title}
+              // onChange 함수를 통해 event(키입력)가 발생한 값을 title 상태의 새로운 값으로 변경
+              onChange={(event) => {
+                setTitle(event.target.value);
+              }}
+            ></input>
+          </p>
+          <p>  
+            <textarea
+              // 위와 동일하게 작성
+              name="body"
+              body="content"
+              placeholder="body"
+              value={body}
+              onChange={(event) => {
+                setBody(event.target.value);
+              }}
+            ></textarea>
+          </p>
+          <p>
+            <input type="submit" value="Update"></input>
+          </p>
+        </form>
+      </article>
+    );
+  }
+  ```
+
+  - 수정에 입장했을 때 기존에 작성한 데이터를 유지하여 보여주기 위해 props로 내려준 값을 각 input의 value 값으로 넣었다.
+
+    그러자, input에 아무리 키입력을 해도 내용이 바뀌질 않았다.
+
+    그 이유는, props로 부모가 내려보내준 값은 변경할 수 없기 때문이었다. 그에따라, props로 내려받은 두 개의 데이터를 상태로 변경하여 진행할 필요가 있었다.
+
+    > ```react
+    >   const [title, setTitle] = useState(props.title);
+    >   const [body, setBody] = useState(props.body);
+    > ```
+
+    위와 같이 하여 value값을 상태로 바꾼 title로 바꾸고, 키입력시 바뀐 내용을 새로운 상태값으로 선언하며 값을 바꾸었다.
+
+    그리고 그 값들을 submit 이벤트가 발생했을 때, onUpdate 함수에 인자로 보내주었다.
+
+  - Update 컴포넌트에서 onUpdate로 보내준 값을 이용하여 해당 게시글의 내용을 바꿀 차례다.
+
+    ```react
+    } else if (mode === "UPDATE") {
+        // 현재 게시글의 제목과 내용을 담기위해 변수선언
+        let title,
+          body = null;
+        // topics를 순회하면서 현재 글의 아이디와 같은 topics의 객체를 찾아서
+        // 해당 객체의 값을 위에 선언한 값에 넣는다.
+        for (let i = 0; i < topics.length; i++) {
+          if (topics[i].id === id) {
+            title = topics[i].title;
+            body = topics[i].body;
+          }
+        }
+        // 변수에 저장한 값을 props로 보내줌
+        content = (
+          <Update
+            title={title}
+            body={body}
+            // create 컴포넌트에서 보내준 _title, _body 값을 이용하여 현재 게시글의 내용 변경
+            onUpdate={(_title, _body) => {
+              // topics 배열 안에 있는 값을 수정해야 함으로 우선 복제
+              const newTopics = [...topics];
+              // 현재 아이디와 컴포넌트에서 받은 수정된 값을 객체로 만듬
+              const updatedTopic = {
+                id: id,
+                title: _title,
+                body: _body,
+              };
+              // 복제한 newTopics를 순회하면서, 현재 게시글의 id 값이 같은 객체를 찾으면
+              // 위의 updatedTopic으로 교체
+              for (let i = 0; i < newTopics.length; i++) {
+                if (newTopics[i].id === id) {
+                  newTopics[i] = updatedTopic;
+                  break;
+                }
+              }
+              // 변경한 newTopics 값을 상태로 변경 
+              setTopics(newTopics);
+              // 변경한 게시글 상세로 가기위해 mode상태를 READ로 변경
+              setMode("READ");
+            }}
+          ></Update>
+        );
+      }
+    ```
+
+    1. onUpdate에서 인자로 받은 값으로 topics의 값을 변경하기 위해서 topics를 복제한 newTopics 선언
+    2. 인자로 받은 값들을 현재 게시글의 id 번호와 함께 객체 updatedTopic로 만듬
+    3. newTopics를 순회하면서, 현재 게시글의 id와 똑같은 id를 가진 데이터를 찾고, 찾은 후 해당 데이터와 updatedTopic을 교체
+    4. 변경한 newTopics의 값을 새로운 상태로 변경
+    5. 변경한 게시글 상세로 돌아가기 위해 mode상태를 READ로 변경 (단, 이미 게시글 id가 지정되어 있으므로 setId는 할필요없음)
+
+    - 위와 같이 진행하여 update 기능을 구현할 수 있었다!
