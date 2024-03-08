@@ -1115,3 +1115,56 @@ npm run build
     5. 변경한 게시글 상세로 돌아가기 위해 mode상태를 READ로 변경 (단, 이미 게시글 id가 지정되어 있으므로 setId는 할필요없음)
 
     - 위와 같이 진행하여 update 기능을 구현할 수 있었다!
+
+
+
+## 10. CRUD_3.DELETE
+
+- DELETE를 구현하기위해서 update 링크를 추가한 곳에 delete 버튼을 추가
+
+  - 버튼이어야함! delete는 따로 페이지(컴포넌트)가 필요없기 때문!
+
+  ```react
+  contextControl = (
+        // 아무것도 들어있지 않은 태그는 안에 있는 태그들을 묶기 위한 용도로만 쓰이는 태그
+        <>
+          {/* 업데이트 버튼 부분 */}
+          <li>
+            <a
+              href={"/update/" + id}
+              onClick={(event) => {
+                event.preventDefault();
+                setMode("UPDATE");
+              }}
+            >
+              Update
+            </a>
+          </li>
+          {/* 삭제 버튼 부분 */}
+          <li>
+      	  {/* 버튼 선언 */}
+            <input
+              type="button"
+              value="Delete"
+              onClick={() => {
+                // 삭제 기믹
+                // 1. 빈 배열을 선언
+                const newTopics = [];
+                // 2. for 문을 돌아 topics에 현재 id와 다른 데이터들만 newTopics에 담음
+                for (let i = 0; i < topics.length; i++) {
+                  if (topics[i].id !== id) {
+                    newTopics.push(topics[i]);
+                  }
+                }
+               // 3. 현재 게시글만 없는 newTopics를 상태로 선언
+                setTopics(newTopics);
+              // 4. 현재 글이없으니 메인화면으로 이동을 위해 상태를 "WELCOME"으로 선언
+                setMode("WELCOME");
+              }}
+            ></input>
+          </li>
+        </>
+      );
+  ```
+
+  - 위와 같이 하면 DELETE 기능이 구현 가능하다
